@@ -38,7 +38,7 @@ export default function SettingsPage() {
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Heat limit °C">
+            <Field label="Ideal max temp °C">
               <input className={inputClass} value={form.heatLimitC} onChange={(e) => setForm({ ...form, heatLimitC: Number(e.target.value) })} />
             </Field>
             <Field label="Rain limit mm">

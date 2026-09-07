@@ -39,9 +39,11 @@ export function scoreOutdoorDay(input: {
     score -= Math.min(50, 18 + input.precipMm * 4);
     reasons.push(`${input.precipMm.toFixed(1)} mm rain`);
   }
-  if (input.tempMax >= input.heatLimitC) {
-    score -= 25;
-    reasons.push(`${input.tempMax.toFixed(0)}°C heat`);
+  if (input.tempMax > input.heatLimitC) {
+    const over = input.tempMax - input.heatLimitC;
+    const heatPenalty = Math.min(50, Math.round(over * 5));
+    score -= heatPenalty;
+    reasons.push(`${input.tempMax.toFixed(0)}°C (ideal max ${input.heatLimitC}°C)`);
   }
   if (input.tempMin <= 4) {
     score -= 15;

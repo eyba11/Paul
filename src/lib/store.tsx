@@ -84,6 +84,10 @@ function migrate(state: CoachState): CoachState {
           : `${entry.notes ? `${entry.notes} · ` : ""}Corrected DEXA total ${fixed.leanMassKg + fixed.fatMassKg} kg to match scale (was lean+fat ~83 kg placeholder).`,
       };
     }),
+    settings: {
+      ...state.settings,
+      heatLimitC: state.settings.heatLimitC >= 32 ? 21 : state.settings.heatLimitC,
+    },
   };
 }
 

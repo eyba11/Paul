@@ -9,7 +9,7 @@ export const defaultSettings: CoachState["settings"] = {
   weeklyLongRun: 1,
   preferredRunHours: [6, 18],
   preferredLiftHours: [7, 17],
-  heatLimitC: 32,
+  heatLimitC: 21,
   rainLimitMm: 4,
   city: process.env.NEXT_PUBLIC_DEFAULT_CITY || "Sydney",
   lat: Number(process.env.NEXT_PUBLIC_DEFAULT_LAT || -33.8688),

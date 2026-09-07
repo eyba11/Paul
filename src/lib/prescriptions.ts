@@ -6,6 +6,8 @@ export interface RxItem {
   target?: string;
   rest?: string;
   note?: string;
+  loadKg?: number;
+  loadLabel?: string;
 }
 
 export interface RxBlock {
@@ -28,21 +30,21 @@ const library: Record<string, WorkoutRx> = {
         items: [
           { name: "Easy bike or walk", scheme: "4 min", note: "Raise temperature, no stretching yet." },
           { name: "Bodyweight squat + hip airplane", scheme: "2 × 8 / 6 per side" },
-          { name: "Empty-bar squat", scheme: "2 × 8", note: "Then 2 ramp-up sets to the working weight." },
+          { name: "Empty-bar squat", scheme: "2 × 8", loadKg: 20, loadLabel: "kg bar", note: "Then 2 ramp-up sets to the working weight." },
         ],
       },
       {
         title: "Main lifts",
         items: [
-          { name: "Back squat", scheme: "4 × 5", target: "RPE 7", rest: "2:30", note: "Last rep should still look like the first." },
-          { name: "Romanian deadlift", scheme: "3 × 8", target: "RPE 7", rest: "2:00", note: "Soft knees, long hamstrings, no bounce." },
-          { name: "Rear-foot elevated split squat", scheme: "3 × 8 / leg", target: "RPE 7", rest: "90s", note: "Torso tall, front heel heavy." },
+          { name: "Back squat", scheme: "4 × 5", target: "RPE 7", rest: "2:30", loadKg: 80, loadLabel: "kg", note: "Last rep should still look like the first." },
+          { name: "Romanian deadlift", scheme: "3 × 8", target: "RPE 7", rest: "2:00", loadKg: 70, loadLabel: "kg", note: "Soft knees, long hamstrings, no bounce." },
+          { name: "Rear-foot elevated split squat", scheme: "3 × 8 / leg", target: "RPE 7", rest: "90s", loadKg: 16, loadLabel: "kg / DB", note: "Torso tall, front heel heavy." },
         ],
       },
       {
         title: "Accessories",
         items: [
-          { name: "Standing calf raise", scheme: "3 × 12", rest: "60s" },
+          { name: "Standing calf raise", scheme: "3 × 12", rest: "60s", loadKg: 40, loadLabel: "kg" },
           { name: "Side plank", scheme: "3 × 30s / side", note: "If back is fried, do dead bugs instead." },
         ],
       },
@@ -56,23 +58,23 @@ const library: Record<string, WorkoutRx> = {
         items: [
           { name: "Band pull-aparts + arm circles", scheme: "2 × 15" },
           { name: "Push-up + inverted row", scheme: "2 × 8" },
-          { name: "Empty-bar bench", scheme: "2 × 8" },
+          { name: "Empty-bar bench", scheme: "2 × 8", loadKg: 20, loadLabel: "kg bar" },
         ],
       },
       {
         title: "Main lifts",
         items: [
-          { name: "Barbell bench press", scheme: "4 × 6", target: "RPE 7", rest: "2:30" },
-          { name: "Weighted pull-up or lat pulldown", scheme: "4 × 6–8", target: "RPE 7", rest: "2:00", note: "Full hang, no kip." },
-          { name: "Dumbbell overhead press", scheme: "3 × 8", target: "RPE 7", rest: "90s" },
-          { name: "Chest-supported row", scheme: "3 × 10", rest: "90s" },
+          { name: "Barbell bench press", scheme: "4 × 6", target: "RPE 7", rest: "2:30", loadKg: 62.5, loadLabel: "kg" },
+          { name: "Weighted pull-up or lat pulldown", scheme: "4 × 6–8", target: "RPE 7", rest: "2:00", loadKg: 5, loadLabel: "kg added", note: "Full hang, no kip. 0 kg = bodyweight pull-ups." },
+          { name: "Dumbbell overhead press", scheme: "3 × 8", target: "RPE 7", rest: "90s", loadKg: 18, loadLabel: "kg / DB" },
+          { name: "Chest-supported row", scheme: "3 × 10", rest: "90s", loadKg: 50, loadLabel: "kg" },
         ],
       },
       {
         title: "Finishers",
         items: [
-          { name: "Face pull", scheme: "3 × 15", rest: "45s" },
-          { name: "Farmer carry", scheme: "3 × 30 m", note: "Heavy, quiet feet." },
+          { name: "Face pull", scheme: "3 × 15", rest: "45s", loadKg: 12, loadLabel: "kg" },
+          { name: "Farmer carry", scheme: "3 × 30 m", loadKg: 32, loadLabel: "kg / hand", note: "Heavy, quiet feet." },
         ],
       },
     ],
@@ -84,23 +86,23 @@ const library: Record<string, WorkoutRx> = {
         title: "Warm-up · 6 min",
         items: [
           { name: "World's greatest stretch", scheme: "6 / side" },
-          { name: "Goblet squat + push-up", scheme: "2 × 8" },
+          { name: "Goblet squat + push-up", scheme: "2 × 8", loadKg: 16, loadLabel: "kg goblet" },
         ],
       },
       {
         title: "Strength circuit · 3 rounds",
         items: [
-          { name: "Goblet or front squat", scheme: "8 reps", target: "RPE 7", rest: "45s then next move" },
-          { name: "Push-up or DB bench", scheme: "8–10 reps" },
-          { name: "One-arm DB row", scheme: "8 / arm" },
-          { name: "Romanian deadlift", scheme: "8 reps" },
+          { name: "Goblet or front squat", scheme: "8 reps", target: "RPE 7", rest: "45s then next move", loadKg: 24, loadLabel: "kg" },
+          { name: "Push-up or DB bench", scheme: "8–10 reps", loadKg: 22.5, loadLabel: "kg / DB" },
+          { name: "One-arm DB row", scheme: "8 / arm", loadKg: 24, loadLabel: "kg" },
+          { name: "Romanian deadlift", scheme: "8 reps", loadKg: 60, loadLabel: "kg" },
           { name: "Rest between rounds", scheme: "2:00" },
         ],
       },
       {
         title: "Carry + core",
         items: [
-          { name: "Suitcase carry", scheme: "2 × 40 m / side" },
+          { name: "Suitcase carry", scheme: "2 × 40 m / side", loadKg: 24, loadLabel: "kg" },
           { name: "Dead bug", scheme: "2 × 8 / side" },
         ],
       },
@@ -245,9 +247,9 @@ const techniqueStrength: WorkoutRx = {
     {
       title: "Technique",
       items: [
-        { name: "Squat or hinge (choose one)", scheme: "3 × 5", target: "RPE 5", rest: "2:00", note: "Empty bar to light plates only." },
-        { name: "Push-up or DB press", scheme: "3 × 8", target: "RPE 5" },
-        { name: "Row", scheme: "3 × 10", target: "RPE 5" },
+        { name: "Squat or hinge (choose one)", scheme: "3 × 5", target: "RPE 5", rest: "2:00", loadKg: 40, loadLabel: "kg", note: "Light plates only." },
+        { name: "Push-up or DB press", scheme: "3 × 8", target: "RPE 5", loadKg: 12, loadLabel: "kg / DB" },
+        { name: "Row", scheme: "3 × 10", target: "RPE 5", loadKg: 20, loadLabel: "kg" },
       ],
     },
   ],
@@ -268,4 +270,26 @@ export function getWorkoutRx(session: Pick<PlannedSession, "templateId" | "inten
 
 export function rxItemKey(blockTitle: string, item: RxItem, index: number): string {
   return `${blockTitle}:${item.name}:${index}`;
+}
+
+export function loadStorageKey(itemName: string): string {
+  return itemName.trim().toLowerCase();
+}
+
+export function paceToKmh(min: number, sec: number): number {
+  const minutes = min + sec / 60;
+  if (minutes <= 0) return 0;
+  return Math.round((60 / minutes) * 10) / 10;
+}
+
+export function speedFromPaceTarget(target?: string): string | undefined {
+  if (!target || !/\/km/i.test(target)) return undefined;
+  const matches = [...target.matchAll(/(\d+):(\d{2})/g)];
+  if (!matches.length) return undefined;
+  const speeds = matches.map((m) => paceToKmh(Number(m[1]), Number(m[2])));
+  if (speeds.length === 1) return `${speeds[0].toFixed(1)} km/h avg`;
+  const slow = Math.min(...speeds);
+  const fast = Math.max(...speeds);
+  const avg = Math.round(((slow + fast) / 2) * 10) / 10;
+  return `${slow.toFixed(1)}–${fast.toFixed(1)} km/h · avg ${avg.toFixed(1)} km/h`;
 }

@@ -10,8 +10,9 @@ export default function WeatherPage() {
     <div className="space-y-4">
       <h1 className="font-display text-3xl uppercase">Weather engine</h1>
       <p className="text-sm text-mist">
-        Outdoor score blends rain, heat, wind and storms against your limits ({state.settings.rainLimitMm} mm /
-        {state.settings.heatLimitC}°C). Low scores push runs indoors or onto better days.
+        Outdoor score blends rain, heat, wind and storms. Ideal max for running is {state.settings.heatLimitC}°C
+        ({state.settings.rainLimitMm} mm rain). Each degree above that cuts the outdoor score. Low scores push runs
+        indoors or onto cooler days.
       </p>
       <button
         onClick={() => refreshWeather()}

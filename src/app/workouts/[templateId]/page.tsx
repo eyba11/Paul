@@ -1,6 +1,6 @@
 "use client";
 
-import { SessionDetail } from "@/components/SessionDetail";
+import { ItemTargets, SessionDetail } from "@/components/SessionDetail";
 import { getWorkoutRx } from "@/lib/prescriptions";
 import { useCoach } from "@/lib/store";
 import { Card, typeLabel } from "@/components/ui";
@@ -51,8 +51,7 @@ export default function TemplateDetailPage() {
                   <span>{item.name}</span>
                   <span className="text-mist">{item.scheme}</span>
                 </div>
-                {item.target && <p className="mt-1 text-volt">{item.target}</p>}
-                {item.note && <p className="mt-1 text-mist">{item.note}</p>}
+                <ItemTargets item={item} />
               </li>
             ))}
           </ul>
