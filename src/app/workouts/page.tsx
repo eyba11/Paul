@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Card, typeLabel } from "@/components/ui";
 import { useCoach } from "@/lib/store";
 
