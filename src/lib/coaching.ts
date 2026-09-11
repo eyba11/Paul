@@ -30,7 +30,7 @@ export function buildRecommendations(state: CoachState): CoachRecommendation[] {
     recs.push({
       id: "high-recovery",
       title: "You can push the quality slot",
-      action: "Keep the planned interval or heavy lower session. Add 5–10 minutes easy only if RPE stays honest.",
+      action: "Keep the planned VO₂ run or the heavy gym session. Add 5–10 minutes easy only if RPE stays honest.",
       explanation: `Recovery is ${recovery.score}/10. That is enough reserve for one hard stimulus. Do not stack a long run and a max-strength day back to back just because you feel good.`,
       severity: "info",
     });

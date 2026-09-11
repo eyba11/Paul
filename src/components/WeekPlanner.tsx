@@ -25,6 +25,7 @@ export function WeekPlanner() {
               <div>
                 <p className="text-xs text-mist">{longDate(session.date)}</p>
                 <h2 className="text-lg text-foam">{session.name}</h2>
+                <p className="text-sm text-foam/80">{session.focus}</p>
                 <p className="text-sm text-mist">
                   {typeLabel(session.type)} · {session.durationMin} min · {session.intensity}
                 </p>

@@ -13,7 +13,7 @@ import { buildRecommendations } from "./coaching";
 import { applyAdaptiveRules } from "./schedule-engine";
 import { correctedPlaceholderMass, isPlaceholderDexaMass } from "./dexa";
 import { rejigWeek } from "./rejig";
-import { createSeedState } from "./seed";
+import { applyWeekdayPlan, createSeedState, CURRENT_PLAN_ID, templates } from "./seed";
 import { scoreOutdoorDay } from "./weather-engine";
 import { logFingerprint, weightFingerprint } from "./garmin-csv";
 import {
@@ -64,14 +64,19 @@ function persist(state: CoachState) {
 }
 
 function migrate(state: CoachState): CoachState {
+  const week = state.week.map((s) => ({
+    ...s,
+    baseNotes: s.baseNotes ?? s.notes,
+    baseDurationMin: s.baseDurationMin ?? s.durationMin,
+    baseName: s.baseName ?? s.name,
+  }));
+  const stalePlan =
+    state.settings.planId !== CURRENT_PLAN_ID ||
+    week.some((s) => s.templateId === "lower" || s.templateId === "upper" || s.templateId === "full");
   return {
     ...state,
-    week: state.week.map((s) => ({
-      ...s,
-      baseNotes: s.baseNotes ?? s.notes,
-      baseDurationMin: s.baseDurationMin ?? s.durationMin,
-      baseName: s.baseName ?? s.name,
-    })),
+    templates,
+    week: stalePlan ? applyWeekdayPlan(week, templates) : week,
     dexa: state.dexa.map((entry) => {
       if (!isPlaceholderDexaMass(entry)) return entry;
       const fixed = correctedPlaceholderMass(entry);
@@ -86,7 +91,9 @@ function migrate(state: CoachState): CoachState {
     }),
     settings: {
       ...state.settings,
+      weeklyEasyRun: stalePlan ? 1 : state.settings.weeklyEasyRun,
       heatLimitC: state.settings.heatLimitC >= 32 ? 21 : state.settings.heatLimitC,
+      planId: CURRENT_PLAN_ID,
     },
   };
 }

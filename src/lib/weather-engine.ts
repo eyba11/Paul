@@ -96,7 +96,7 @@ export function applyWeatherToWeek<T extends {
       return {
         ...session,
         weatherAdjusted: true,
-        notes: `${notes} Weather: ${day.caution ?? day.summary}. Prefer treadmill, indoor bike, or shift to a clearer day.`,
+        notes: `${notes} Weather: ${day.caution ?? day.summary}. Prefer the rower, indoor bike, or shift to a clearer day.`,
       };
     }
     return {

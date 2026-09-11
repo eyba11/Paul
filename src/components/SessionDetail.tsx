@@ -48,6 +48,7 @@ export function ItemTargets({ item, load, onLoad }: { item: RxItem; load?: numbe
         </label>
       )}
       {item.rest && <p className="mt-1 text-xs text-mist">Rest {item.rest}</p>}
+      {item.equipment && <p className="mt-1 text-xs text-mist">{item.equipment}</p>}
       {item.note && <p className="mt-1 text-sm text-mist">{item.note}</p>}
     </>
   );
@@ -100,6 +101,7 @@ export function SessionDetail({ session }: { session: PlannedSession }) {
       <div>
         <p className="text-xs uppercase tracking-[0.18em] text-mist">{longDate(session.date)}</p>
         <h1 className="font-display text-3xl uppercase leading-none text-foam">{session.name}</h1>
+        <p className="mt-2 text-sm text-foam/80">{session.focus}</p>
         <p className="mt-2 text-sm text-mist">
           {typeLabel(session.type)} · {session.durationMin} min · {session.intensity}
         </p>
@@ -114,7 +116,7 @@ export function SessionDetail({ session }: { session: PlannedSession }) {
         )}
         {isRun && (
           <p className="mt-2 text-sm text-mist">
-            Pace is min/km. Average speed is the km/h equivalent of that pace band.
+            Easy running is a talk test. VO₂ work is RPE 8–9 — do not sprint the first rep. Pace/speed only shows if a /km target is listed.
           </p>
         )}
         {session.weatherAdjusted && rx.indoorNote && (

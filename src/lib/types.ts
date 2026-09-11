@@ -127,6 +127,7 @@ export interface AthleteSettings {
   city: string;
   lat: number;
   lon: number;
+  planId?: string;
 }
 
 export interface CoachState {

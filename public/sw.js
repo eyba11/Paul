@@ -1,4 +1,4 @@
-const CACHE = "phc-v1";
+const CACHE = "phc-v2";
 const PRECACHE = ["/", "/plan", "/log", "/track", "/coach", "/offline.html", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {

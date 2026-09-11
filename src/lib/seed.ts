@@ -1,11 +1,13 @@
 import type { CoachState, PlannedSession, WorkoutTemplate } from "./types";
-import { addDays, startOfWeek, uid } from "./dates";
+import { addDays, parseIso, startOfWeek, uid } from "./dates";
+
+export const CURRENT_PLAN_ID = "push-pull-legs-v2";
 
 export const defaultSettings: CoachState["settings"] = {
   name: "Paul",
   weeklyStrength: 3,
   weeklyQualityRun: 1,
-  weeklyEasyRun: 2,
+  weeklyEasyRun: 1,
   weeklyLongRun: 1,
   preferredRunHours: [6, 18],
   preferredLiftHours: [7, 17],
@@ -14,78 +16,79 @@ export const defaultSettings: CoachState["settings"] = {
   city: process.env.NEXT_PUBLIC_DEFAULT_CITY || "Sydney",
   lat: Number(process.env.NEXT_PUBLIC_DEFAULT_LAT || -33.8688),
   lon: Number(process.env.NEXT_PUBLIC_DEFAULT_LON || 151.2093),
+  planId: CURRENT_PLAN_ID,
 };
 
 export const templates: WorkoutTemplate[] = [
   {
-    id: "lower",
-    name: "Lower strength",
+    id: "push",
+    name: "Push + core",
     type: "strength",
-    durationMin: 60,
+    durationMin: 58,
     intensity: "hard",
     environment: "indoor",
-    focus: "Squat pattern + posterior chain",
-    notes: "Squat or hinge primary, then unilateral and calves.",
+    focus: "Chest, shoulders, triceps and anterior core",
+    notes: "50–65 min. Warm-up: 5 min easy row, then 2–4 heavier practice sets on the first lift. Practice sets do not count as working sets.",
   },
   {
-    id: "upper",
-    name: "Upper strength",
+    id: "pull",
+    name: "Pull + core",
     type: "strength",
-    durationMin: 55,
+    durationMin: 58,
     intensity: "hard",
     environment: "indoor",
-    focus: "Press + pull volume",
-    notes: "Horizontal and vertical pairs, keep rest honest.",
+    focus: "Back, biceps, grip and trunk",
+    notes: "50–65 min. Warm-up: 5 min easy row, then 2–4 heavier practice sets on the first lift. Practice sets do not count as working sets.",
   },
   {
-    id: "full",
-    name: "Full-body hybrid",
+    id: "legs",
+    name: "Legs + core",
     type: "strength",
-    durationMin: 50,
-    intensity: "moderate",
+    durationMin: 62,
+    intensity: "hard",
     environment: "indoor",
-    focus: "Full-body density",
-    notes: "Compound circuits, leave some in the tank.",
+    focus: "Leg mass, glutes and symmetry",
+    notes: "55–70 min. Warm-up: 5 min easy row, then 2–4 heavier practice sets on the first lift. Practice sets do not count as working sets.",
   },
   {
     id: "easy",
-    name: "Easy aerobic",
+    name: "Zone 2 run",
     type: "easy_run",
-    durationMin: 40,
+    durationMin: 48,
     intensity: "easy",
     environment: "outdoor",
-    focus: "Zone 2",
-    notes: "Conversational pace. Walk hills if needed.",
+    focus: "Aerobic base and recovery",
+    notes: "40–55 min conversational. Indoors, easy rowing that keeps breathing controlled — do not chase heart rate at the expense of the talk test.",
   },
   {
     id: "quality",
-    name: "Quality session",
+    name: "VO₂ max run",
     type: "quality_run",
-    durationMin: 45,
+    durationMin: 40,
     intensity: "hard",
     environment: "outdoor",
-    focus: "Threshold or intervals",
-    notes: "Warm up well. Stop if form collapses.",
+    focus: "Aerobic power",
+    notes: "35–45 min. RPE 8–9/10. First rep is not a sprint. Hold a similar pace across all reps.",
   },
   {
     id: "long",
-    name: "Long aerobic",
+    name: "Easy long run",
     type: "long_run",
-    durationMin: 80,
+    durationMin: 55,
     intensity: "moderate",
     environment: "outdoor",
-    focus: "Durability",
-    notes: "Steady, fuel early, finish able to talk.",
+    focus: "Endurance",
+    notes: "Start 45–55 min and build toward 60–70 min. Keep it easy. If Friday’s legs leave you sore or running ugly, shorten it or swap a brisk walk.",
   },
   {
     id: "mobility",
-    name: "Mobility + walk",
+    name: "Recovery",
     type: "mobility",
-    durationMin: 30,
+    durationMin: 35,
     intensity: "recovery",
     environment: "either",
-    focus: "Tissue quality",
-    notes: "Hips, T-spine, easy 20 min walk.",
+    focus: "Walk, mobility and roller work",
+    notes: "As needed. Easy walk, hips/T-spine, roller. No heroics.",
   },
   {
     id: "rest",
@@ -98,6 +101,14 @@ export const templates: WorkoutTemplate[] = [
     notes: "Sleep, food, no heroics.",
   },
 ];
+
+/** Monday = 0 … Sunday = 6 */
+export const WEEKDAY_TEMPLATE_IDS = ["push", "quality", "pull", "easy", "legs", "long", "mobility"] as const;
+
+export function weekdayMon0(date: string): number {
+  const d = parseIso(date).getDay();
+  return d === 0 ? 6 : d - 1;
+}
 
 function sessionFrom(template: WorkoutTemplate, date: string): PlannedSession {
   return {
@@ -120,17 +131,35 @@ function sessionFrom(template: WorkoutTemplate, date: string): PlannedSession {
   };
 }
 
+export function overlayTemplate(session: PlannedSession, template: WorkoutTemplate): PlannedSession {
+  return {
+    ...session,
+    templateId: template.id,
+    name: template.name,
+    baseName: template.name,
+    type: template.type,
+    durationMin: template.durationMin,
+    baseDurationMin: template.durationMin,
+    intensity: template.intensity,
+    environment: template.environment,
+    focus: template.focus,
+    notes: template.notes,
+    baseNotes: template.notes,
+  };
+}
+
+export function applyWeekdayPlan(week: PlannedSession[], planTemplates: WorkoutTemplate[] = templates): PlannedSession[] {
+  const byId = Object.fromEntries(planTemplates.map((t) => [t.id, t]));
+  return week.map((session) => {
+    const id = WEEKDAY_TEMPLATE_IDS[weekdayMon0(session.date)];
+    const template = byId[id];
+    return template ? overlayTemplate(session, template) : session;
+  });
+}
+
 export function buildBaseWeek(weekStart = startOfWeek()): PlannedSession[] {
   const t = Object.fromEntries(templates.map((x) => [x.id, x]));
-  return [
-    sessionFrom(t.lower, addDays(weekStart, 0)),
-    sessionFrom(t.easy, addDays(weekStart, 1)),
-    sessionFrom(t.upper, addDays(weekStart, 2)),
-    sessionFrom(t.quality, addDays(weekStart, 3)),
-    sessionFrom(t.full, addDays(weekStart, 4)),
-    sessionFrom(t.long, addDays(weekStart, 5)),
-    sessionFrom(t.mobility, addDays(weekStart, 6)),
-  ];
+  return WEEKDAY_TEMPLATE_IDS.map((id, i) => sessionFrom(t[id], addDays(weekStart, i)));
 }
 
 export function createSeedState(): CoachState {
@@ -143,20 +172,20 @@ export function createSeedState(): CoachState {
       {
         id: uid("log"),
         date: addDays(weekStart, -2),
-        name: "Easy aerobic",
+        name: "Zone 2 run",
         type: "easy_run",
         completed: true,
         rpe: 4,
-        durationMin: 42,
+        durationMin: 45,
       },
       {
         id: uid("log"),
         date: addDays(weekStart, -1),
-        name: "Lower strength",
+        name: "Push + core",
         type: "strength",
         completed: true,
         rpe: 7,
-        durationMin: 62,
+        durationMin: 58,
       },
     ],
     weights: [
