@@ -16,8 +16,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { hydrated } = useCoach();
   return (
-    <div className="mx-auto min-h-dvh w-full max-w-lg pb-24">
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-white/5 bg-ink-950/90 px-4 py-3 backdrop-blur">
+    <div className="mx-auto min-h-dvh w-full max-w-lg pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-white/5 bg-ink-950/90 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.7rem)] backdrop-blur">
         <div>
           <p className="font-display text-[11px] uppercase tracking-[0.28em] text-volt">
             Paul&apos;s Hybrid Coach
@@ -25,12 +25,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <p className="text-xs text-mist">Strength · running · recovery</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/settings" className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-foam">
+          <Link href="/settings" className="rounded-full border border-white/10 px-3 py-2 text-xs text-foam">
             Settings
           </Link>
           <Link
             href="/workouts"
-            className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-foam"
+            className="rounded-full border border-white/10 px-3 py-2 text-xs text-foam"
           >
             Library
           </Link>
@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="px-4 py-4">
         {hydrated ? children : <p className="py-16 text-center text-mist">Loading coach…</p>}
       </main>
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-ink-900/95 backdrop-blur">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-ink-900/95 pb-[max(0.35rem,env(safe-area-inset-bottom))] backdrop-blur">
         <ul className="mx-auto grid max-w-lg grid-cols-5">
           {nav.map((item) => {
             const active = pathname === item.href;

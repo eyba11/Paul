@@ -11,9 +11,10 @@ export async function GET(req: NextRequest) {
   url.searchParams.set("longitude", lon);
   url.searchParams.set("daily", "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max");
   url.searchParams.set("timezone", "auto");
-  url.searchParams.set("forecast_days", "7");
+  url.searchParams.set("forecast_days", "16");
+  url.searchParams.set("past_days", "0");
 
-  const res = await fetch(url.toString(), { next: { revalidate: 1800 } });
+  const res = await fetch(url.toString(), { cache: "no-store" });
   if (!res.ok) {
     return NextResponse.json({ error: "Forecast unavailable" }, { status: 502 });
   }

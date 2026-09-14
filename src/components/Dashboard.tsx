@@ -5,11 +5,15 @@ import { useMemo, useState } from "react";
 import { Card, GhostButton, PrimaryButton, SeverityDot, Sparkline, typeLabel } from "@/components/ui";
 import { longDate, todayIso, weekdayLabel } from "@/lib/dates";
 import { useCoach } from "@/lib/store";
+import { upcomingWeather } from "@/lib/weather-engine";
 
 export default function PaulsHybridCoachDashboard() {
   const { state, recommendations, refreshWeather, rejig, hydrated } = useCoach();
   const [busy, setBusy] = useState<"weather" | "rejig" | null>(null);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
   const today = todayIso();
+  const forecast = upcomingWeather(state.weather, today).slice(0, 7);
+  const weatherToday = forecast.find((w) => w.date === today);
   const session = state.week.find((s) => s.date === today) ?? state.week.find((s) => s.date >= today);
   const weights = useMemo(
     () => [...state.weights].sort((a, b) => a.date.localeCompare(b.date)).map((w) => w.kg),
@@ -18,12 +22,14 @@ export default function PaulsHybridCoachDashboard() {
   const recovery = [...state.recovery].sort((a, b) => b.date.localeCompare(a.date))[0];
   const dexa = [...state.dexa].sort((a, b) => b.date.localeCompare(a.date))[0];
   const waist = [...state.waists].sort((a, b) => b.date.localeCompare(a.date))[0];
-  const weatherToday = state.weather.find((w) => w.date === today);
 
   async function onWeather() {
     setBusy("weather");
+    setWeatherError(null);
     try {
       await refreshWeather();
+    } catch {
+      setWeatherError("Could not fetch a fresh forecast. Check the network and try again.");
     } finally {
       setBusy(null);
     }
@@ -92,26 +98,25 @@ export default function PaulsHybridCoachDashboard() {
             <p className="mt-1 text-lg text-foam">
               {weatherToday
                 ? `${weatherToday.summary} · ${Math.round(weatherToday.tempMax)}°`
-                : "Fetch the 7-day outdoor score"}
+                : "Fetch the outdoor score from today"}
             </p>
+            <p className="mt-1 text-xs text-mist">From today only — yesterday is dropped so you can place runs this week. Cap 21°C, or 23°C if overcast or drizzle.</p>
             {weatherToday?.caution && (
               <p className="mt-1 text-sm text-amber-200">{weatherToday.caution}</p>
             )}
+            {weatherError && <p className="mt-1 text-sm text-amber-200">{weatherError}</p>}
           </div>
           <Link href="/weather" className="text-xs text-volt">
             Details
           </Link>
         </div>
         <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-          {state.week.map((day) => {
-            const w = state.weather.find((x) => x.date === day.date);
-            return (
-              <div key={day.id} className="min-w-[3.4rem] rounded-2xl bg-ink-900 px-2 py-2 text-center">
-                <p className="text-[10px] uppercase text-mist">{weekdayLabel(day.date)}</p>
-                <p className="text-sm text-foam">{w ? w.outdoorScore : "–"}</p>
-              </div>
-            );
-          })}
+          {forecast.map((w) => (
+            <div key={w.date} className="min-w-[3.4rem] rounded-2xl bg-ink-900 px-2 py-2 text-center">
+              <p className="text-[10px] uppercase text-mist">{weekdayLabel(w.date)}</p>
+              <p className="text-sm text-foam">{w.outdoorScore}</p>
+            </div>
+          ))}
         </div>
         <div className="mt-4 flex gap-2">
           <PrimaryButton onClick={onWeather} disabled={busy !== null}>

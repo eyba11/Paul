@@ -45,6 +45,7 @@ export default function SettingsPage() {
               <input className={inputClass} value={form.rainLimitMm} onChange={(e) => setForm({ ...form, rainLimitMm: Number(e.target.value) })} />
             </Field>
           </div>
+          <p className="text-xs text-mist">Sun cap is {form.heatLimitC}°C. Overcast or drizzle can run up to 23°C before heat cuts the outdoor score.</p>
           <PrimaryButton type="submit">Save</PrimaryButton>
         </form>
       </Card>

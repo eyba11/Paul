@@ -23,6 +23,19 @@ export function weatherSummary(code: number): string {
   return WMO[code] ?? "Mixed conditions";
 }
 
+/** Overcast (3) or drizzle family (51–57). */
+export function isOvercastOrDrizzle(code: number): boolean {
+  return code === 3 || (code >= 51 && code <= 57);
+}
+
+export function effectiveHeatCapC(code: number, heatLimitC: number): number {
+  return isOvercastOrDrizzle(code) ? Math.max(heatLimitC, 23) : heatLimitC;
+}
+
+export function upcomingWeather<T extends { date: string }>(days: T[], today: string): T[] {
+  return days.filter((d) => d.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+}
+
 export function scoreOutdoorDay(input: {
   date: string;
   code: number;
@@ -35,15 +48,19 @@ export function scoreOutdoorDay(input: {
 }): WeatherDay {
   const reasons: string[] = [];
   let score = 100;
+  const heatCapC = effectiveHeatCapC(input.code, input.heatLimitC);
   if (input.precipMm >= input.rainLimitMm) {
     score -= Math.min(50, 18 + input.precipMm * 4);
     reasons.push(`${input.precipMm.toFixed(1)} mm rain`);
   }
-  if (input.tempMax > input.heatLimitC) {
-    const over = input.tempMax - input.heatLimitC;
+  if (input.tempMax > heatCapC) {
+    const over = input.tempMax - heatCapC;
     const heatPenalty = Math.min(50, Math.round(over * 5));
     score -= heatPenalty;
-    reasons.push(`${input.tempMax.toFixed(0)}°C (ideal max ${input.heatLimitC}°C)`);
+    const capNote = isOvercastOrDrizzle(input.code)
+      ? `overcast/drizzle cap ${heatCapC}°C`
+      : `ideal max ${heatCapC}°C`;
+    reasons.push(`${input.tempMax.toFixed(0)}°C (${capNote})`);
   }
   if (input.tempMin <= 4) {
     score -= 15;

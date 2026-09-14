@@ -1,4 +1,4 @@
-const CACHE = "phc-v2";
+const CACHE = "phc-v3";
 const PRECACHE = ["/", "/plan", "/log", "/track", "/coach", "/offline.html", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -18,6 +18,11 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
+  const path = new URL(req.url).pathname;
+  if (path.startsWith("/api/")) {
+    event.respondWith(fetch(req, { cache: "no-store" }));
+    return;
+  }
   event.respondWith(
     fetch(req)
       .then((res) => {

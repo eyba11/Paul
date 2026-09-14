@@ -1,18 +1,20 @@
 "use client";
 
 import { Card } from "@/components/ui";
-import { weekdayLabel } from "@/lib/dates";
+import { todayIso, weekdayLabel } from "@/lib/dates";
 import { useCoach } from "@/lib/store";
+import { upcomingWeather } from "@/lib/weather-engine";
 
 export default function WeatherPage() {
   const { state, refreshWeather } = useCoach();
+  const forecast = upcomingWeather(state.weather, todayIso());
   return (
     <div className="space-y-4">
       <h1 className="font-display text-3xl uppercase">Weather engine</h1>
       <p className="text-sm text-mist">
-        Outdoor score blends rain, heat, wind and storms. Ideal max for running is {state.settings.heatLimitC}°C
-        ({state.settings.rainLimitMm} mm rain). Each degree above that cuts the outdoor score. Low scores push runs
-        indoors or onto cooler days.
+        Scores start from today so you can place this week&apos;s runs. Yesterday is dropped. Cap is{" "}
+        {state.settings.heatLimitC}°C in sun, or 23°C when the day is overcast or drizzling. Rain over{" "}
+        {state.settings.rainLimitMm} mm, wind and storms still cut the score.
       </p>
       <button
         onClick={() => refreshWeather()}
@@ -20,7 +22,7 @@ export default function WeatherPage() {
       >
         Fetch forecast for {state.settings.city}
       </button>
-      {state.weather.map((w) => (
+      {forecast.map((w) => (
         <Card key={w.date}>
           <div className="flex items-start justify-between">
             <div>

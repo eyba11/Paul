@@ -13,8 +13,8 @@ import { buildRecommendations } from "./coaching";
 import { applyAdaptiveRules } from "./schedule-engine";
 import { correctedPlaceholderMass, isPlaceholderDexaMass } from "./dexa";
 import { rejigWeek } from "./rejig";
-import { applyWeekdayPlan, createSeedState, CURRENT_PLAN_ID, templates } from "./seed";
-import { scoreOutdoorDay } from "./weather-engine";
+import { applyWeekdayPlan, createSeedState, CURRENT_PLAN_ID, rollPlannerWeek, templates } from "./seed";
+import { scoreOutdoorDay, upcomingWeather } from "./weather-engine";
 import { logFingerprint, weightFingerprint } from "./garmin-csv";
 import {
   STORAGE_KEY,
@@ -64,19 +64,23 @@ function persist(state: CoachState) {
 }
 
 function migrate(state: CoachState): CoachState {
-  const week = state.week.map((s) => ({
-    ...s,
-    baseNotes: s.baseNotes ?? s.notes,
-    baseDurationMin: s.baseDurationMin ?? s.durationMin,
-    baseName: s.baseName ?? s.name,
-  }));
+  const week = rollPlannerWeek(
+    state.week.map((s) => ({
+      ...s,
+      baseNotes: s.baseNotes ?? s.notes,
+      baseDurationMin: s.baseDurationMin ?? s.durationMin,
+      baseName: s.baseName ?? s.name,
+    })),
+  );
   const stalePlan =
     state.settings.planId !== CURRENT_PLAN_ID ||
     week.some((s) => s.templateId === "lower" || s.templateId === "upper" || s.templateId === "full");
+  const today = todayIso();
   return {
     ...state,
     templates,
     week: stalePlan ? applyWeekdayPlan(week, templates) : week,
+    weather: upcomingWeather(state.weather, today),
     dexa: state.dexa.map((entry) => {
       if (!isPlaceholderDexaMass(entry)) return entry;
       const fixed = correctedPlaceholderMass(entry);
@@ -132,11 +136,11 @@ export function CoachProvider({ children }: { children: ReactNode }) {
 
   const refreshWeather = useCallback(async () => {
     const { lat, lon, heatLimitC, rainLimitMm } = state.settings;
-    const url = `/api/weather?lat=${lat}&lon=${lon}`;
-    const res = await fetch(url);
+    const url = `/api/weather?lat=${lat}&lon=${lon}&t=${Date.now()}`;
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) throw new Error("Weather fetch failed");
     const data = (await res.json()) as {
-      daily: {
+      daily?: {
         time: string[];
         weather_code: number[];
         temperature_2m_max: number[];
@@ -144,21 +148,36 @@ export function CoachProvider({ children }: { children: ReactNode }) {
         precipitation_sum: number[];
         wind_speed_10m_max: number[];
       };
+      error?: string;
     };
-    const weather: WeatherDay[] = data.daily.time.map((date, i) =>
-      scoreOutdoorDay({
-        date,
-        code: data.daily.weather_code[i],
-        tempMax: data.daily.temperature_2m_max[i],
-        tempMin: data.daily.temperature_2m_min[i],
-        precipMm: data.daily.precipitation_sum[i],
-        windKmh: data.daily.wind_speed_10m_max[i],
-        heatLimitC,
-        rainLimitMm,
-      }),
+    if (!data.daily?.time?.length) throw new Error(data.error || "Forecast unavailable");
+    const today = todayIso();
+    const weather: WeatherDay[] = upcomingWeather(
+      data.daily.time.map((date, i) =>
+        scoreOutdoorDay({
+          date,
+          code: data.daily!.weather_code[i],
+          tempMax: data.daily!.temperature_2m_max[i],
+          tempMin: data.daily!.temperature_2m_min[i],
+          precipMm: data.daily!.precipitation_sum[i],
+          windKmh: data.daily!.wind_speed_10m_max[i],
+          heatLimitC,
+          rainLimitMm,
+        }),
+      ),
+      today,
     );
     apply((prev) => ({ ...prev, weather, lastWeatherAt: new Date().toISOString() }));
   }, [apply, state.settings]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const today = todayIso();
+    if (state.weather.some((w) => w.date >= today)) return;
+    refreshWeather().catch(() => undefined);
+    // Only auto-fill once after load when the stored forecast is stale.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
 
   const value = useMemo<CoachContextValue>(
     () => ({

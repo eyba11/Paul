@@ -1,5 +1,6 @@
 import type { CoachRecommendation, CoachState } from "./types";
 import { todayIso } from "./dates";
+import { upcomingWeather } from "./weather-engine";
 
 function trend(values: number[]): number {
   if (values.length < 2) return 0;
@@ -85,7 +86,7 @@ export function buildRecommendations(state: CoachState): CoachRecommendation[] {
     });
   }
 
-  const badWeather = state.weather.filter((w) => !w.outdoorOk);
+  const badWeather = upcomingWeather(state.weather, today).filter((w) => !w.outdoorOk);
   if (badWeather.length) {
     recs.push({
       id: "weather",

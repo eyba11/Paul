@@ -162,6 +162,17 @@ export function buildBaseWeek(weekStart = startOfWeek()): PlannedSession[] {
   return WEEKDAY_TEMPLATE_IDS.map((id, i) => sessionFrom(t[id], addDays(weekStart, i)));
 }
 
+/** Rebuild Mon–Sun when localStorage is still on last week so weather can match session dates. */
+export function rollPlannerWeek(week: PlannedSession[]): PlannedSession[] {
+  const monday = startOfWeek();
+  const sunday = addDays(monday, 6);
+  const sorted = [...week].sort((a, b) => a.date.localeCompare(b.date));
+  if (sorted.length === 7 && sorted[0]?.date === monday && sorted[6]?.date === sunday) {
+    return week;
+  }
+  return buildBaseWeek(monday);
+}
+
 export function createSeedState(): CoachState {
   const weekStart = startOfWeek();
   return {
