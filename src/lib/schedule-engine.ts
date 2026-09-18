@@ -16,6 +16,7 @@ export function applyAdaptiveRules(state: CoachState): PlannedSession[] {
 
   return week.map((session) => {
     if (session.date < today) return session;
+    if (session.completed) return session;
     if (recovery <= 4 && session.intensity === "hard") {
       return {
         ...session,

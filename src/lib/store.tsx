@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { buildRecommendations } from "./coaching";
+import { applyCompletionToPlanner } from "./complete-week";
 import { applyAdaptiveRules } from "./schedule-engine";
 import { correctedPlaceholderMass, isPlaceholderDexaMass } from "./dexa";
 import { rejigWeek } from "./rejig";
@@ -21,6 +22,7 @@ import {
   type CalendarBlock,
   type CoachState,
   type DexaEntry,
+  type LiftLog,
   type RecoveryEntry,
   type SessionType,
   type WeatherDay,
@@ -37,12 +39,15 @@ interface CoachContextValue {
   rejig: () => void;
   logCompletion: (input: {
     sessionId?: string;
+    templateId?: string;
+    fromLibrary?: boolean;
     name: string;
     type: SessionType;
     rpe?: number;
     durationMin?: number;
     notes?: string;
     date?: string;
+    lifts?: { exercise: string; kg?: number; reps?: number }[];
   }) => void;
   addWeight: (kg: number, date?: string) => void;
   addWaist: (cm: number, date?: string) => void;
@@ -81,6 +86,7 @@ function migrate(state: CoachState): CoachState {
     templates,
     week: stalePlan ? applyWeekdayPlan(week, templates) : week,
     weather: upcomingWeather(state.weather, today),
+    liftLogs: state.liftLogs ?? [],
     dexa: state.dexa.map((entry) => {
       if (!isPlaceholderDexaMass(entry)) return entry;
       const fixed = correctedPlaceholderMass(entry);
@@ -187,18 +193,42 @@ export function CoachProvider({ children }: { children: ReactNode }) {
       refreshWeather,
       rejig: () => apply((prev) => rejigWeek(prev)),
       logCompletion: (input) =>
-        apply((prev) => ({
-          ...prev,
-          logs: [
-            {
-              id: uid("log"),
-              date: todayIso(),
-              completed: true,
-              ...input,
-            } satisfies WorkoutLog,
-            ...prev.logs,
-          ],
-        })),
+        apply((prev) => {
+          const logId = uid("log");
+          const date = input.date ?? todayIso();
+          const { lifts, ...logFields } = input;
+          const log: WorkoutLog = {
+            id: logId,
+            date,
+            completed: true,
+            ...logFields,
+          };
+          const liftLogs: LiftLog[] = [
+            ...(lifts ?? [])
+              .filter((lift) => lift.kg != null || lift.reps != null)
+              .map((lift) => ({
+                id: uid("lift"),
+                date,
+                exercise: lift.exercise,
+                kg: lift.kg,
+                reps: lift.reps,
+              })),
+            ...prev.liftLogs,
+          ];
+          return {
+            ...prev,
+            logs: [log, ...prev.logs],
+            liftLogs,
+            week: applyCompletionToPlanner(prev.week, {
+              date,
+              name: input.name,
+              type: input.type,
+              templateId: input.templateId,
+              logId,
+              sessionId: input.fromLibrary ? undefined : input.sessionId,
+            }),
+          };
+        }),
       addWeight: (kg, date) =>
         apply((prev) => ({
           ...prev,

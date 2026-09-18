@@ -128,6 +128,14 @@ function sessionFrom(template: WorkoutTemplate, date: string): PlannedSession {
     locked: false,
     weatherAdjusted: false,
     calendarAdjusted: false,
+    completed: false,
+  };
+}
+
+export function templateAsSession(template: WorkoutTemplate, date: string): PlannedSession {
+  return {
+    ...sessionFrom(template, date),
+    id: `library-${template.id}`,
   };
 }
 
@@ -253,5 +261,6 @@ export function createSeedState(): CoachState {
       },
     ],
     weather: [],
+    liftLogs: [],
   };
 }

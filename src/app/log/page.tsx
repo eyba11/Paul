@@ -27,6 +27,7 @@ export default function LogPage() {
     e.preventDefault();
     logCompletion({
       sessionId: todaySession?.id,
+      templateId: todaySession?.templateId,
       name: todaySession?.name ?? "Custom session",
       type: (todaySession?.type ?? "easy_run") as SessionType,
       rpe: Number(rpe),

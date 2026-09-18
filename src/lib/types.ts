@@ -38,11 +38,14 @@ export interface PlannedSession {
   locked: boolean;
   weatherAdjusted: boolean;
   calendarAdjusted: boolean;
+  completed?: boolean;
+  completedLogId?: string;
 }
 
 export interface WorkoutLog {
   id: string;
   sessionId?: string;
+  templateId?: string;
   date: string;
   name: string;
   type: SessionType;
@@ -50,6 +53,15 @@ export interface WorkoutLog {
   rpe?: number;
   durationMin?: number;
   notes?: string;
+  fromLibrary?: boolean;
+}
+
+export interface LiftLog {
+  id: string;
+  date: string;
+  exercise: string;
+  kg?: number;
+  reps?: number;
 }
 
 export interface WeightEntry {
@@ -141,6 +153,7 @@ export interface CoachState {
   recovery: RecoveryEntry[];
   calendar: CalendarBlock[];
   weather: WeatherDay[];
+  liftLogs: LiftLog[];
   lastRejigAt?: string;
   lastWeatherAt?: string;
 }

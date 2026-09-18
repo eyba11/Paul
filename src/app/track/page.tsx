@@ -2,8 +2,9 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { GarminImport } from "@/components/GarminImport";
-import { Card, Field, PrimaryButton, inputClass } from "@/components/ui";
+import { Card, Field, PrimaryButton, Sparkline, inputClass } from "@/components/ui";
 import { dexaScaleGap, dexaTotalKg, massesFromTotal } from "@/lib/dexa";
+import { latestLiftMarks } from "@/lib/lifts";
 import { useCoach } from "@/lib/store";
 
 export default function TrackPage() {
@@ -56,11 +57,62 @@ export default function TrackPage() {
 
   const weights = [...state.weights].sort((a, b) => b.date.localeCompare(a.date));
   const waists = [...state.waists].sort((a, b) => b.date.localeCompare(a.date));
+  const latestLifts = latestLiftMarks(state.liftLogs ?? []);
+  const liftNames = Object.keys(latestLifts).sort((a, b) => latestLifts[b].date.localeCompare(latestLifts[a].date));
 
   return (
     <div className="space-y-4">
       <h1 className="font-display text-3xl uppercase">Body tracking</h1>
       <GarminImport />
+      <Card>
+        <h2 className="mb-3 text-sm uppercase tracking-[0.16em] text-mist">Lift progress</h2>
+        <p className="mb-3 text-sm text-mist">
+          Kg and reps from completed gym sessions. Edit the boxes in a workout, then mark complete.
+        </p>
+        {liftNames.length === 0 ? (
+          <p className="text-sm text-mist">No lift history yet.</p>
+        ) : (
+          <ul className="space-y-3">
+            {liftNames.map((key) => {
+              const last = latestLifts[key];
+              const history = [...(state.liftLogs ?? [])]
+                .filter((l) => l.exercise.trim().toLowerCase() === key)
+                .sort((a, b) => a.date.localeCompare(b.date));
+              const label = history[0]?.exercise ?? key;
+              const kgs = history.map((l) => l.kg).filter((n): n is number => n != null);
+              return (
+                <li key={key} className="rounded-2xl bg-ink-900 p-3">
+                  <p className="text-foam">{label}</p>
+                  <p className="mt-1 font-display text-2xl text-volt">
+                    {last.kg != null ? `${last.kg} kg` : "—"}
+                    {last.reps != null ? ` × ${last.reps}` : ""}
+                  </p>
+                  <p className="text-xs text-mist">{last.date}</p>
+                  {kgs.length >= 2 && (
+                    <div className="mt-2 text-volt">
+                      <Sparkline values={kgs} />
+                    </div>
+                  )}
+                  <ul className="mt-2 space-y-1 text-xs text-mist">
+                    {[...history]
+                      .reverse()
+                      .slice(0, 6)
+                      .map((l) => (
+                        <li key={l.id} className="flex justify-between gap-3">
+                          <span>{l.date}</span>
+                          <span className="text-foam">
+                            {l.kg != null ? `${l.kg} kg` : ""}
+                            {l.reps != null ? ` × ${l.reps}` : ""}
+                          </span>
+                        </li>
+                      ))}
+                  </ul>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Card>
       <Card>
         <h2 className="mb-3 text-sm uppercase tracking-[0.16em] text-mist">Weight</h2>
         <form onSubmit={onWeight} className="mb-3 flex gap-2">

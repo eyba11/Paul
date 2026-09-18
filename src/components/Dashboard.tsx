@@ -52,7 +52,7 @@ export default function PaulsHybridCoachDashboard() {
           <section className="overflow-hidden rounded-[28px] border border-volt/20 bg-gradient-to-br from-ink-700 to-ink-950 p-5">
             <p className="font-display text-xs uppercase tracking-[0.25em] text-volt">Today · tap for workout</p>
             <h1 className="mt-1 font-display text-3xl uppercase leading-none text-foam">
-              {session.name}
+              {session.completed ? `✓ ${session.name}` : session.name}
             </h1>
             <p className="mt-2 text-sm text-mist">{`${session.durationMin} min · ${session.focus}`}</p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs">
@@ -166,7 +166,9 @@ export default function PaulsHybridCoachDashboard() {
             <li key={s.id}>
               <Link href={`/session/${s.id}`} className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-mist">{longDate(s.date)}</span>
-                <span className={s.date === today ? "text-volt" : "text-foam"}>{s.name}</span>
+                <span className={s.date === today ? "text-volt" : "text-foam"}>
+                  {s.completed ? `✓ ${s.name}` : s.name}
+                </span>
               </Link>
             </li>
           ))}

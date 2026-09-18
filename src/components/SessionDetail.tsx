@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Card, Field, PrimaryButton, inputClass, typeLabel } from "@/components/ui";
 import { longDate } from "@/lib/dates";
+import { defaultRepsFromScheme, latestLiftMarks, tracksReps } from "@/lib/lifts";
 import { getWorkoutRx, loadStorageKey, rxItemKey, speedFromPaceTarget, type RxItem } from "@/lib/prescriptions";
 import { useCoach } from "@/lib/store";
 import type { PlannedSession } from "@/lib/types";
@@ -13,39 +14,78 @@ function ticksKey(sessionId: string) {
 }
 
 const LOADS_KEY = "phc-exercise-loads-v1";
+const REPS_KEY = "phc-exercise-reps-v1";
 
-function readLoads(): Record<string, number> {
+function readMap(key: string): Record<string, number> {
   try {
-    const raw = localStorage.getItem(LOADS_KEY);
+    const raw = localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as Record<string, number>) : {};
   } catch {
     return {};
   }
 }
 
-export function ItemTargets({ item, load, onLoad }: { item: RxItem; load?: number; onLoad?: (kg: number) => void }) {
+export function ItemTargets({
+  item,
+  load,
+  reps,
+  last,
+  onLoad,
+  onReps,
+}: {
+  item: RxItem;
+  load?: number;
+  reps?: number;
+  last?: { kg?: number; reps?: number; date: string };
+  onLoad?: (kg: number) => void;
+  onReps?: (reps: number) => void;
+}) {
   const speed = speedFromPaceTarget(item.target);
   const kg = load ?? item.loadKg;
+  const showReps = Boolean(onReps) && tracksReps(item.scheme, item.loadKg);
+  const repValue = reps ?? defaultRepsFromScheme(item.scheme);
   return (
     <>
       {item.target && (
         <p className="mt-1 font-display text-lg uppercase tracking-wide text-volt">{item.target}</p>
       )}
       {speed && <p className="text-sm text-foam">{speed}</p>}
-      {item.loadKg != null && (
-        <label className="mt-2 flex items-center gap-2 text-sm" onClick={(e) => e.stopPropagation()}>
-          <span className="text-mist">{item.loadLabel ?? "kg"}</span>
-          {onLoad ? (
-            <input
-              className="w-24 rounded-xl border border-white/10 bg-ink-950 px-2 py-1 text-foam outline-none ring-volt/40 focus:ring-2"
-              inputMode="decimal"
-              value={kg ?? ""}
-              onChange={(e) => onLoad(Number(e.target.value) || 0)}
-            />
-          ) : (
-            <span className="font-display text-lg text-volt">{item.loadKg}</span>
+      {(item.loadKg != null || showReps) && (
+        <div className="mt-2 flex flex-wrap gap-3" onClick={(e) => e.stopPropagation()}>
+          {item.loadKg != null && (
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-mist">{item.loadLabel ?? "kg"}</span>
+              {onLoad ? (
+                <input
+                  className="w-20 rounded-xl border border-white/10 bg-ink-950 px-2 py-1 text-foam outline-none ring-volt/40 focus:ring-2"
+                  inputMode="decimal"
+                  value={kg ?? ""}
+                  onChange={(e) => onLoad(Number(e.target.value) || 0)}
+                />
+              ) : (
+                <span className="font-display text-lg text-volt">{item.loadKg}</span>
+              )}
+            </label>
           )}
-        </label>
+          {showReps && (
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-mist">reps</span>
+              <input
+                className="w-16 rounded-xl border border-white/10 bg-ink-950 px-2 py-1 text-foam outline-none ring-volt/40 focus:ring-2"
+                inputMode="numeric"
+                value={repValue ?? ""}
+                onChange={(e) => onReps?.(Number(e.target.value) || 0)}
+              />
+            </label>
+          )}
+        </div>
+      )}
+      {last && (last.kg != null || last.reps != null) && (
+        <p className="mt-1 text-xs text-mist">
+          Last {last.date}
+          {last.kg != null ? ` · ${last.kg} kg` : ""}
+          {last.reps != null ? ` × ${last.reps}` : ""}
+        </p>
       )}
       {item.rest && <p className="mt-1 text-xs text-mist">Rest {item.rest}</p>}
       {item.equipment && <p className="mt-1 text-xs text-mist">{item.equipment}</p>}
@@ -54,15 +94,23 @@ export function ItemTargets({ item, load, onLoad }: { item: RxItem; load?: numbe
   );
 }
 
-export function SessionDetail({ session }: { session: PlannedSession }) {
-  const { logCompletion } = useCoach();
+export function SessionDetail({
+  session,
+  fromLibrary = false,
+}: {
+  session: PlannedSession;
+  fromLibrary?: boolean;
+}) {
+  const { logCompletion, state } = useCoach();
   const rx = useMemo(() => getWorkoutRx(session), [session]);
   const [ticks, setTicks] = useState<Record<string, boolean>>({});
   const [loads, setLoads] = useState<Record<string, number>>({});
+  const [reps, setReps] = useState<Record<string, number>>({});
   const [rpe, setRpe] = useState("7");
   const [saved, setSaved] = useState(false);
   const isStrength = session.type === "strength";
   const isRun = session.type === "easy_run" || session.type === "quality_run" || session.type === "long_run";
+  const lastMarks = useMemo(() => latestLiftMarks(state.liftLogs), [state.liftLogs]);
 
   useEffect(() => {
     try {
@@ -71,8 +119,17 @@ export function SessionDetail({ session }: { session: PlannedSession }) {
     } catch {
       setTicks({});
     }
-    setLoads(readLoads());
-  }, [session.id]);
+    const storedLoads = readMap(LOADS_KEY);
+    const storedReps = readMap(REPS_KEY);
+    const nextLoads = { ...storedLoads };
+    const nextReps = { ...storedReps };
+    for (const [key, mark] of Object.entries(lastMarks)) {
+      if (mark.kg != null && nextLoads[key] == null) nextLoads[key] = mark.kg;
+      if (mark.reps != null && nextReps[key] == null) nextReps[key] = mark.reps;
+    }
+    setLoads(nextLoads);
+    setReps(nextReps);
+  }, [session.id, lastMarks]);
 
   function toggle(key: string) {
     setTicks((prev) => {
@@ -90,13 +147,21 @@ export function SessionDetail({ session }: { session: PlannedSession }) {
     });
   }
 
+  function saveReps(name: string, count: number) {
+    setReps((prev) => {
+      const next = { ...prev, [loadStorageKey(name)]: count };
+      localStorage.setItem(REPS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
+
   const totalItems = rx.blocks.reduce((n, b) => n + b.items.length, 0);
   const doneItems = Object.values(ticks).filter(Boolean).length;
 
   return (
     <div className="space-y-4">
-      <Link href="/plan" className="text-sm text-volt">
-        ← Planner
+      <Link href={fromLibrary ? "/workouts" : "/plan"} className="text-sm text-volt">
+        {fromLibrary ? "← Library" : "← Planner"}
       </Link>
       <div>
         <p className="text-xs uppercase tracking-[0.18em] text-mist">{longDate(session.date)}</p>
@@ -105,13 +170,21 @@ export function SessionDetail({ session }: { session: PlannedSession }) {
         <p className="mt-2 text-sm text-mist">
           {typeLabel(session.type)} · {session.durationMin} min · {session.intensity}
         </p>
+        {fromLibrary && (
+          <p className="mt-2 text-sm text-volt">
+            Library session for today. Completing this logs the work you actually did and updates the planner suggestion.
+          </p>
+        )}
+        {session.completed && (
+          <p className="mt-2 text-sm text-volt">Already logged for this slot.</p>
+        )}
       </div>
 
       <Card>
         <p className="text-sm text-foam">{rx.summary}</p>
         {isStrength && (
           <p className="mt-2 text-sm text-mist">
-            Working weights are starting numbers for an ~85 kg hybrid athlete. Edit the kg field — it saves on this phone for next time.
+            Edit kg and reps. Both save on this phone and land in Track so you can see progress.
           </p>
         )}
         {isRun && (
@@ -135,6 +208,7 @@ export function SessionDetail({ session }: { session: PlannedSession }) {
             {block.items.map((item, i) => {
               const key = rxItemKey(block.title, item, i);
               const on = Boolean(ticks[key]);
+              const markKey = loadStorageKey(item.name);
               return (
                 <li key={key} className={`rounded-2xl border p-3 ${on ? "border-volt/40 bg-volt/10" : "border-white/10 bg-ink-900"}`}>
                   <button type="button" onClick={() => toggle(key)} className="w-full text-left">
@@ -148,8 +222,11 @@ export function SessionDetail({ session }: { session: PlannedSession }) {
                   </button>
                   <ItemTargets
                     item={item}
-                    load={loads[loadStorageKey(item.name)]}
+                    load={loads[markKey]}
+                    reps={reps[markKey]}
+                    last={lastMarks[markKey]}
                     onLoad={item.loadKg != null ? (kg) => saveLoad(item.name, kg) : undefined}
+                    onReps={tracksReps(item.scheme, item.loadKg) ? (count) => saveReps(item.name, count) : undefined}
                   />
                 </li>
               );
@@ -164,13 +241,28 @@ export function SessionDetail({ session }: { session: PlannedSession }) {
           className="mt-3 space-y-3"
           onSubmit={(e) => {
             e.preventDefault();
+            const lifts = rx.blocks.flatMap((block) =>
+              block.items
+                .filter((item) => tracksReps(item.scheme, item.loadKg) || item.loadKg != null)
+                .map((item) => {
+                  const markKey = loadStorageKey(item.name);
+                  return {
+                    exercise: item.name,
+                    kg: loads[markKey] ?? item.loadKg,
+                    reps: reps[markKey] ?? defaultRepsFromScheme(item.scheme),
+                  };
+                }),
+            );
             logCompletion({
-              sessionId: session.id,
+              sessionId: fromLibrary ? undefined : session.id,
+              templateId: session.templateId,
+              fromLibrary,
               name: session.name,
               type: session.type,
               durationMin: session.durationMin,
               rpe: Number(rpe),
-              date: session.date,
+              date: fromLibrary ? undefined : session.date,
+              lifts,
             });
             setSaved(true);
           }}

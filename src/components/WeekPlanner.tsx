@@ -24,14 +24,14 @@ export function WeekPlanner() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs text-mist">{longDate(session.date)}</p>
-                <h2 className="text-lg text-foam">{session.name}</h2>
+                <h2 className={`text-lg ${session.completed ? "text-volt" : "text-foam"}`}>{session.name}</h2>
                 <p className="text-sm text-foam/80">{session.focus}</p>
                 <p className="text-sm text-mist">
                   {typeLabel(session.type)} · {session.durationMin} min · {session.intensity}
                 </p>
               </div>
               <div className="flex flex-col items-end gap-1 text-[10px] uppercase tracking-wide">
-                <span className="text-volt">Open</span>
+                <span className="text-volt">{session.completed ? "Done" : "Open"}</span>
                 {session.weatherAdjusted && <span className="text-volt">Weather</span>}
                 {session.calendarAdjusted && <span className="text-mist">Calendar</span>}
               </div>

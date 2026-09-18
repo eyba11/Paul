@@ -14,10 +14,10 @@ const PRIORITY: SessionType[] = [
 
 function remainingKeySessions(week: PlannedSession[], today: string): PlannedSession[] {
   const done = new Set(
-    week.filter((s) => s.date < today).map((s) => s.templateId + s.type),
+    week.filter((s) => s.date < today || s.completed).map((s) => s.templateId + s.type),
   );
   return week
-    .filter((s) => s.date >= today && s.type !== "rest")
+    .filter((s) => s.date >= today && !s.completed && s.type !== "rest")
     .sort((a, b) => PRIORITY.indexOf(a.type) - PRIORITY.indexOf(b.type))
     .filter((s, i, arr) => arr.findIndex((x) => x.templateId === s.templateId) === i)
     .filter((s) => !done.has(s.templateId + s.type));

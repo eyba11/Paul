@@ -10,7 +10,7 @@ export default function WorkoutsPage() {
     <div className="space-y-3">
       <h1 className="font-display text-3xl uppercase">Workout library</h1>
       <p className="text-sm text-mist">
-        Templates the adaptive planner, weather engine and rejig feature pull from.
+        Templates you can run today. Completing one logs that workout and updates the planner suggestion — it does not tick a different day&apos;s planned session.
       </p>
       {state.templates.map((t) => (
         <Link key={t.id} href={`/workouts/${t.id}`} className="block">
