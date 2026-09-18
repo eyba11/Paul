@@ -62,6 +62,7 @@ export interface LiftLog {
   exercise: string;
   kg?: number;
   reps?: number;
+  templateId?: string;
 }
 
 export interface WeightEntry {

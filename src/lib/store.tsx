@@ -212,6 +212,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
                 exercise: lift.exercise,
                 kg: lift.kg,
                 reps: lift.reps,
+                templateId: input.templateId,
               })),
             ...prev.liftLogs,
           ];

@@ -2,9 +2,12 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { GarminImport } from "@/components/GarminImport";
+import { WeekLineChart } from "@/components/WeekLineChart";
 import { Card, Field, PrimaryButton, Sparkline, inputClass } from "@/components/ui";
 import { dexaScaleGap, dexaTotalKg, massesFromTotal } from "@/lib/dexa";
 import { latestLiftMarks } from "@/lib/lifts";
+import { muscleWeekSeries, sessionIndexSeries } from "@/lib/muscle-progress";
+import { weekLabel } from "@/lib/dates";
 import { useCoach } from "@/lib/store";
 
 export default function TrackPage() {
@@ -59,11 +62,93 @@ export default function TrackPage() {
   const waists = [...state.waists].sort((a, b) => b.date.localeCompare(a.date));
   const latestLifts = latestLiftMarks(state.liftLogs ?? []);
   const liftNames = Object.keys(latestLifts).sort((a, b) => latestLifts[b].date.localeCompare(latestLifts[a].date));
+  const muscleSeries = useMemo(() => muscleWeekSeries(state.liftLogs ?? []), [state.liftLogs]);
+  const sessionSeries = useMemo(() => sessionIndexSeries(state.liftLogs ?? []), [state.liftLogs]);
+  const sessionWeeks = useMemo(() => {
+    const weeks = new Set(sessionSeries.flatMap((s) => s.points.map((p) => p.week)));
+    return [...weeks].sort((a, b) => a.localeCompare(b));
+  }, [sessionSeries]);
 
   return (
     <div className="space-y-4">
       <h1 className="font-display text-3xl uppercase">Body tracking</h1>
       <GarminImport />
+      <Card>
+        <h2 className="mb-2 text-sm uppercase tracking-[0.16em] text-mist">Week-by-week load</h2>
+        <p className="mb-3 text-sm text-mist">
+          Best logged kg each week, by muscle. The comparison chart is indexed to 100 in the first week you trained that session, so Push, Pull and Legs can sit on one graph.
+        </p>
+        {sessionSeries.length === 0 ? (
+          <p className="text-sm text-mist">Complete a gym session with kg filled in to start the graph.</p>
+        ) : (
+          <>
+            <p className="text-xs uppercase tracking-[0.16em] text-mist">Push / pull / legs · index</p>
+            <WeekLineChart
+              labels={sessionWeeks.map((w) => weekLabel(w))}
+              ySuffix="%"
+              series={sessionSeries.map((s) => ({
+                id: s.session,
+                color: s.color,
+                points: s.points
+                  .map((p) => ({ x: sessionWeeks.indexOf(p.week), y: p.index }))
+                  .filter((p) => p.x >= 0),
+              }))}
+            />
+            <div className="mt-2 flex flex-wrap gap-3 text-xs">
+              {sessionSeries.map((s) => (
+                <span key={s.session} className="flex items-center gap-1.5 text-mist">
+                  <span className="inline-block h-2 w-2 rounded-full" style={{ background: s.color }} />
+                  {s.session}
+                </span>
+              ))}
+            </div>
+            <ul className="mt-4 space-y-4">
+              {muscleSeries.map((s) => {
+                const last = s.points.at(-1);
+                return (
+                  <li key={s.meta.id} className="rounded-2xl bg-ink-900 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.16em] text-mist">
+                          {s.meta.session} · {s.meta.label}
+                        </p>
+                        <p className="mt-1 font-display text-2xl" style={{ color: s.meta.color }}>
+                          {last ? `${last.kg} kg` : "—"}
+                        </p>
+                      </div>
+                      {s.deltaKg != null && (
+                        <p className={`text-sm ${s.deltaKg >= 0 ? "text-volt" : "text-orange-300"}`}>
+                          {s.deltaKg >= 0 ? "+" : ""}
+                          {s.deltaKg.toFixed(1)} kg
+                          {s.deltaPct != null ? ` · ${s.deltaPct >= 0 ? "+" : ""}${s.deltaPct.toFixed(0)}%` : ""}
+                        </p>
+                      )}
+                    </div>
+                    {s.points.length >= 2 ? (
+                      <div className="mt-2" style={{ color: s.meta.color }}>
+                        <WeekLineChart
+                          labels={s.points.map((p) => p.label)}
+                          ySuffix="kg"
+                          height={140}
+                          series={[
+                            {
+                              id: s.meta.id,
+                              color: s.meta.color,
+                              points: s.points.map((p, i) => ({ x: i, y: p.kg })),
+                            },
+                          ]}
+                        />
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-xs text-mist">Need two weeks of this lift to draw a line.</p>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </Card>
       <Card>
         <h2 className="mb-3 text-sm uppercase tracking-[0.16em] text-mist">Lift progress</h2>
         <p className="mb-3 text-sm text-mist">

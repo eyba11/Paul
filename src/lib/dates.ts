@@ -36,6 +36,14 @@ export function longDate(date: string): string {
   });
 }
 
+export function weekStartIso(date: string): string {
+  return startOfWeek(parseIso(date));
+}
+
+export function weekLabel(monday: string): string {
+  return parseIso(monday).toLocaleDateString("en-AU", { day: "numeric", month: "short" });
+}
+
 export function weekDates(weekStart: string): string[] {
   return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 }
